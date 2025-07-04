@@ -163,9 +163,6 @@ GitHub Pages
 Environment Variables
 Create a `.env` file in the root directory:
 
-env
-VITE_APP_TITLE=My Calendar App
-VITE_APP_VERSION=1.0.0
 
 
 Customization
