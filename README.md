@@ -67,21 +67,25 @@ npm run build
 
 Desktop View
 ![Desktop Calendar](./screenshots/desktop-calendar.png)
+
 *Full desktop calendar view with events*
 
 Mobile View
 
 ![Mobile Calendar](./screenshots/mobile-calendar.png)
+
 *Responsive mobile interface*
 
 Event Management
 
 ![Event Modal](./screenshots/event-modal.png)
+
 *Event creation and editing modal*
 
 Event Overflow
 
 ![Event Overflow](./screenshots/event-overflow.png)
+
 *Smart handling of multiple events per day*
 
 🛠️ Technology Stack
