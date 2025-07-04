@@ -140,27 +140,6 @@ Navigation
 - Keyboard: Use Tab and Enter for navigation
 - Mobile: Touch-friendly interface
 
-📂 Project Structure
-
-
-src/
-├── App.tsx               Main application component
-├── Calendar.tsx          Core calendar component
-├── Calendar.css          Responsive styling
-├── main.tsx             Application entry point
-├── types/               TypeScript type definitions
-└── utils/               Utility functions
-
-public/
-├── index.html           HTML template
-└── screenshots/         Application screenshots
-
-config/
-├── tsconfig.json        TypeScript configuration
-├── vite.config.ts       Vite build configuration
-└── package.json         Dependencies and scripts
-
-
 🌐 Deployment
 
 Netlify (Recommended)
