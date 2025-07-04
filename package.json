@@ -4,7 +4,7 @@
   "description": "A modern, responsive calendar application built with React and TypeScript",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 5173",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
