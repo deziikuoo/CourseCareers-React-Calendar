@@ -5,6 +5,8 @@ import React, {
   useMemo,
   useRef,
 } from "react";
+import ErrorBoundary from "./ErrorBoundary";
+import ThemeToggle from "./ThemeToggle";
 import {
   format,
   addMonths,
@@ -43,9 +45,9 @@ const sortEvents = (a: Event, b: Event): number => {
 };
 
 const loadInitialEvents = (): Event[] => {
-  const storedEvents = localStorage.getItem("calendarEvents");
-  if (storedEvents) {
-    try {
+  try {
+    const storedEvents = localStorage.getItem("calendarEvents");
+    if (storedEvents) {
       const parsed = JSON.parse(storedEvents);
       if (
         Array.isArray(parsed) &&
@@ -75,9 +77,10 @@ const loadInitialEvents = (): Event[] => {
           parsed
         );
       }
-    } catch (error) {
-      console.error("Error parsing events from LocalStorage:", error);
     }
+  } catch (error) {
+    console.error("Error loading events from LocalStorage:", error);
+    // Could show a user-friendly notification here
   }
   return [];
 };
@@ -117,6 +120,21 @@ const toAmPmFormat = (time: string): string => {
 
 const DAYS_OF_WEEK = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
+// Debounce utility function
+const useDebounce = (callback: Function, delay: number) => {
+  const timeoutRef = useRef<number>();
+  
+  return useCallback((...args: any[]) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = window.setTimeout(() => {
+      callback(...args);
+    }, delay);
+  }, [callback, delay]);
+};
+
 const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [events, setEvents] = useState<Event[]>(loadInitialEvents);
@@ -128,7 +146,26 @@ const Calendar: React.FC = () => {
     [key: string]: Event[];
   }>({});
   const [overflowDate, setOverflowDate] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const triggerRef = useRef<HTMLElement | null>(null);
+
+  // Debounced save function to prevent excessive localStorage writes
+  const saveEventsToStorage = useCallback((eventsToSave: Event[]) => {
+    setSaveStatus('saving');
+    try {
+      localStorage.setItem("calendarEvents", JSON.stringify(eventsToSave));
+      setSaveStatus('saved');
+      // Reset to idle after showing saved status
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (error) {
+      console.error("Failed to save events to localStorage:", error);
+      setSaveStatus('error');
+      // Reset to idle after showing error status
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  }, []);
+
+  const debouncedSaveEvents = useDebounce(saveEventsToStorage, 300);
 
   const monthStart = useMemo(() => startOfMonth(currentDate), [currentDate]);
   const monthEnd = useMemo(() => endOfMonth(currentDate), [currentDate]);
@@ -147,8 +184,8 @@ const Calendar: React.FC = () => {
   const weeks = useMemo(() => Math.ceil(dateRange.length / 7), [dateRange]);
 
   useEffect(() => {
-    localStorage.setItem("calendarEvents", JSON.stringify(events));
-  }, [events]);
+    debouncedSaveEvents(events);
+  }, [events, debouncedSaveEvents]);
 
   const calculateOverflowEvents = useCallback(() => {
     const maxVisibleEvents = 3;
@@ -261,6 +298,13 @@ const Calendar: React.FC = () => {
       const isPastDate = isBefore(day, new Date()) && !isToday(day);
       const isTodayDate = isToday(day);
 
+      const handleDayClick = (e: React.MouseEvent) => {
+        // Only trigger if clicking the day container itself, not events
+        if (e.target === e.currentTarget || (e.target as Element).closest('.day-header')) {
+          openModal(day, e.currentTarget as HTMLElement);
+        }
+      };
+
       return (
         <div
           key={dateString}
@@ -271,16 +315,54 @@ const Calendar: React.FC = () => {
           role="gridcell"
           aria-label={`${format(day, "MMMM d, yyyy")}${
             isTodayDate ? ", Today" : ""
-          }`}
+          }${dayEvents.length > 0 ? `, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}` : ''}. Click to add event.`}
+          aria-selected={isTodayDate}
+          onClick={handleDayClick}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openModal(day, e.currentTarget);
+            } else if (e.key === "ArrowRight") {
+              e.preventDefault();
+              const nextDay = e.currentTarget.nextElementSibling as HTMLElement;
+              if (nextDay && nextDay.classList.contains("calendar-day")) {
+                nextDay.focus();
+              }
+            } else if (e.key === "ArrowLeft") {
+              e.preventDefault();
+              const prevDay = e.currentTarget.previousElementSibling as HTMLElement;
+              if (prevDay && prevDay.classList.contains("calendar-day")) {
+                prevDay.focus();
+              }
+            } else if (e.key === "ArrowDown") {
+              e.preventDefault();
+              const currentIndex = Array.from(e.currentTarget.parentElement?.children || []).indexOf(e.currentTarget);
+              const nextWeekDay = e.currentTarget.parentElement?.children[currentIndex + 7] as HTMLElement;
+              if (nextWeekDay && nextWeekDay.classList.contains("calendar-day")) {
+                nextWeekDay.focus();
+              }
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              const currentIndex = Array.from(e.currentTarget.parentElement?.children || []).indexOf(e.currentTarget);
+              const prevWeekDay = e.currentTarget.parentElement?.children[currentIndex - 7] as HTMLElement;
+              if (prevWeekDay && prevWeekDay.classList.contains("calendar-day")) {
+                prevWeekDay.focus();
+              }
+            }
+          }}
         >
           <div className="day-header">
             {index < 7 && (
-              <span className="day-of-week">{DAYS_OF_WEEK[index]}</span>
+              <span className="day-of-week" aria-hidden="true">{DAYS_OF_WEEK[index]}</span>
             )}
-            <span className="date-number">{format(day, "d")}</span>
+            <span className="date-number" aria-hidden="true">{format(day, "d")}</span>
             <button
-              className="addEvent-button"
-              onClick={(e) => openModal(day, e.currentTarget)}
+              className="addEvent-button desktop-only"
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent day click
+                openModal(day, e.currentTarget);
+              }}
               aria-label={`Add event on ${format(day, "MMMM d, yyyy")}`}
             >
               +
@@ -293,7 +375,10 @@ const Calendar: React.FC = () => {
                 className={`event ${event.allDay ? "all-day" : "timed"} ${
                   event.color
                 }`}
-                onClick={(e) => openEditModal(event, e.currentTarget)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent day click
+                  openEditModal(event, e.currentTarget);
+                }}
                 aria-label={
                   event.allDay
                     ? `${event.name}, All day event`
@@ -320,7 +405,10 @@ const Calendar: React.FC = () => {
             {dayEvents.length > 3 && (
               <button
                 className="overflow-button"
-                onClick={(e) => openOverflowModal(dateString, e.currentTarget)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent day click
+                  openOverflowModal(dateString, e.currentTarget);
+                }}
                 aria-label={`Show ${
                   dayEvents.length - 3
                 } more events on ${format(day, "MMMM d, yyyy")}`}
@@ -353,27 +441,69 @@ const Calendar: React.FC = () => {
     [overflowDate, events]
   );
 
+  const CalendarErrorFallback = () => (
+    <div className="calendar-error-fallback">
+      <div className="error-content">
+        <div className="error-icon">📅</div>
+        <h3>Calendar Error</h3>
+        <p>There was an issue loading the calendar. Your events are safe.</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="retry-button"
+        >
+          Reload Calendar
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="calendar-container">
+    <ErrorBoundary fallback={<CalendarErrorFallback />}>
+      <div className="calendar-container">
       <div className="calendar-header">
-        <button id="todayButton" onClick={goToCurrentMonth}>
+        <button 
+          id="todayButton" 
+          onClick={goToCurrentMonth}
+          aria-label="Go to current month"
+        >
           Today
         </button>
-        <button onClick={goToPreviousMonth} aria-label="Previous Month">
-          {"<"}
-        </button>
-        <button onClick={goToNextMonth} aria-label="Next Month">
-          {">"}
-        </button>
-        <h2>{format(currentDate, "MMMM yyyy")}</h2>
+        <h2 id="current-month-year">{format(currentDate, "MMMM yyyy")}</h2>
+        <div className="save-status" aria-live="polite">
+          {saveStatus === 'saving' && <span className="saving">Saving...</span>}
+          {saveStatus === 'saved' && <span className="saved">✓ Saved</span>}
+          {saveStatus === 'error' && <span className="error">⚠ Save failed</span>}
+        </div>
+        <div className="calendar-nav" role="navigation" aria-label="Calendar navigation">
+          <button 
+            onClick={goToPreviousMonth} 
+            aria-label="Go to previous month"
+            aria-describedby="current-month-year"
+          >
+            {"<"}
+          </button>
+          <button 
+            onClick={goToNextMonth} 
+            aria-label="Go to next month"
+            aria-describedby="current-month-year"
+          >
+            {">"}
+          </button>
+        </div>
+        <ThemeToggle />
       </div>
       <div
         id="calendar-grid"
         className="calendar-grid"
         style={gridStyles}
         role="grid"
-        aria-label="Calendar"
+        aria-label={`Calendar for ${format(currentDate, "MMMM yyyy")}`}
+        aria-describedby="calendar-instructions"
       >
+        <div id="calendar-instructions" className="sr-only">
+          Use Tab to navigate between days. Press Enter or Space to add an event to the selected day. 
+          Use arrow keys to move between months. Today's date is highlighted.
+        </div>
         {renderCalendar}
       </div>
       <AnimatePresence mode="wait" onExitComplete={restoreFocus}>
@@ -397,6 +527,7 @@ const Calendar: React.FC = () => {
         )}
       </AnimatePresence>
     </div>
+    </ErrorBoundary>
   );
 };
 
@@ -547,10 +678,14 @@ const Modal: React.FC<ModalProps> = ({
           exit={{ y: -50, opacity: 0 }}
           role="dialog"
           aria-labelledby="modal-title"
+          aria-describedby="modal-description"
           aria-modal="true"
           onClick={(e) => e.stopPropagation()}
           onKeyDown={handleKeyDown}
         >
+          <div id="modal-description" className="sr-only">
+            {selectedEvent ? "Edit event details" : "Add a new event to your calendar"}
+          </div>
           <h2 id="modal-title">
             {selectedEvent ? "Edit Event" : "Add Event"}{" "}
             {format(selectedDate, "M/d/yy")}
@@ -560,38 +695,45 @@ const Modal: React.FC<ModalProps> = ({
               className="error-message"
               id="form-error"
               aria-live="assertive"
+              role="alert"
             >
               {error}
             </div>
           )}
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="event-name">Event Name</label>
+              <label htmlFor="event-name">Event Name *</label>
               <input
                 id="event-name"
                 type="text"
-                placeholder="Event Name"
+                placeholder="Enter event name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
                 autoFocus
                 aria-describedby={error ? "form-error" : undefined}
+                aria-invalid={error ? "true" : "false"}
               />
             </div>
             <div className="form-group">
-              <label>
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
+                  id="all-day-checkbox"
                   checked={allDay}
                   onChange={(e) => setAllDay(e.target.checked)}
                   onKeyDown={handleCheckboxKeyDown}
+                  aria-describedby="all-day-description"
                 />
-                All Day
+                <span>All Day</span>
               </label>
+              <div id="all-day-description" className="sr-only">
+                Check this box if the event lasts all day
+              </div>
               {!allDay && (
                 <div className="time-inputs">
                   <div>
-                    <label htmlFor="start-time">Start Time</label>
+                    <label htmlFor="start-time">Start Time *</label>
                     <input
                       id="start-time"
                       type="time"
@@ -599,10 +741,11 @@ const Modal: React.FC<ModalProps> = ({
                       onChange={(e) => setStartTime(e.target.value)}
                       required
                       aria-describedby={error ? "form-error" : undefined}
+                      aria-invalid={error ? "true" : "false"}
                     />
                   </div>
                   <div>
-                    <label htmlFor="end-time">End Time</label>
+                    <label htmlFor="end-time">End Time *</label>
                     <input
                       id="end-time"
                       type="time"
@@ -610,17 +753,19 @@ const Modal: React.FC<ModalProps> = ({
                       onChange={(e) => setEndTime(e.target.value)}
                       required
                       aria-describedby={error ? "form-error" : undefined}
+                      aria-invalid={error ? "true" : "false"}
                     />
                   </div>
                 </div>
               )}
             </div>
             <div className="form-group color-picker">
-              <label id="color-label">Color</label>
+              <label id="color-label">Event Color</label>
               <div
                 className="color-options"
                 role="radiogroup"
                 aria-labelledby="color-label"
+                aria-describedby="color-description"
               >
                 {(["red", "blue", "green"] as const).map((c) => (
                   <button
@@ -628,15 +773,18 @@ const Modal: React.FC<ModalProps> = ({
                     type="button"
                     className={`color-option ${c} ${
                       color === c ? "selected" : ""
-                    }`} // Added `${c}` here
+                    }`}
                     onClick={() => setColor(c)}
                     role="radio"
                     aria-checked={color === c}
                     aria-label={`${
                       c.charAt(0).toUpperCase() + c.slice(1)
-                    } color`}
+                    } color${color === c ? ', selected' : ''}`}
                   />
                 ))}
+              </div>
+              <div id="color-description" className="sr-only">
+                Choose a color to organize your events. Red for urgent, blue for work, green for personal.
               </div>
             </div>
             <div className="form-actions">
@@ -700,10 +848,14 @@ const OverflowModal: React.FC<OverflowModalProps> = ({
           exit={{ y: -50, opacity: 0 }}
           role="dialog"
           aria-labelledby="modal-title"
+          aria-describedby="overflow-description"
           aria-modal="true"
           onClick={(e) => e.stopPropagation()}
           onKeyDown={handleKeyDown}
         >
+          <div id="overflow-description" className="sr-only">
+            Events for this day. Click on any event to edit it.
+          </div>
           <h2 id="modal-title">
             {format(parse(date, "yyyy-MM-dd", new Date()), "M/d/yy")}
           </h2>

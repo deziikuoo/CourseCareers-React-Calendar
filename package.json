@@ -1,16 +1,27 @@
 {
-  "name": "preplexity-calender-try-3",
+  "name": "react-calendar-app",
   "version": "1.0.0",
+  "description": "A modern, responsive calendar application built with React and TypeScript",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "type-check": "tsc --noEmit"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "react",
+    "typescript",
+    "calendar",
+    "events",
+    "responsive",
+    "vite",
+    "date-fns",
+    "framer-motion"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
   "dependencies": {
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
