@@ -70,11 +70,15 @@ Desktop View
 
 *Full desktop calendar view with events*
 
+
+
 Mobile View
 
 ![Mobile Calendar](./screenshots/mobile-calendar.png)
 
 *Responsive mobile interface*
+
+
 
 Event Management
 
@@ -82,11 +86,15 @@ Event Management
 
 *Event creation and editing modal*
 
+
+
 Event Overflow
 
 ![Event Overflow](./screenshots/event-overflow.png)
 
 *Smart handling of multiple events per day*
+
+
 
 🛠️ Technology Stack
 
