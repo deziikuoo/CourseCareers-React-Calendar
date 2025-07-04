@@ -67,19 +67,34 @@ npm run build
 
 Desktop View
 ![Desktop Calendar](./screenshots/desktop-calendar.png)
+
 *Full desktop calendar view with events*
 
+
+
 Mobile View
+
 ![Mobile Calendar](./screenshots/mobile-calendar.png)
+
 *Responsive mobile interface*
 
+
+
 Event Management
+
 ![Event Modal](./screenshots/event-modal.png)
+
 *Event creation and editing modal*
 
+
+
 Event Overflow
+
 ![Event Overflow](./screenshots/event-overflow.png)
+
 *Smart handling of multiple events per day*
+
+
 
 🛠️ Technology Stack
 
@@ -125,27 +140,6 @@ Navigation
 - Keyboard: Use Tab and Enter for navigation
 - Mobile: Touch-friendly interface
 
-📂 Project Structure
-
-
-src/
-├── App.tsx               Main application component
-├── Calendar.tsx          Core calendar component
-├── Calendar.css          Responsive styling
-├── main.tsx             Application entry point
-├── types/               TypeScript type definitions
-└── utils/               Utility functions
-
-public/
-├── index.html           HTML template
-└── screenshots/         Application screenshots
-
-config/
-├── tsconfig.json        TypeScript configuration
-├── vite.config.ts       Vite build configuration
-└── package.json         Dependencies and scripts
-
-
 🌐 Deployment
 
 Netlify (Recommended)
@@ -163,15 +157,6 @@ GitHub Pages
 1. Install gh-pages: `npm install --save-dev gh-pages`
 2. Add deploy script to package.json
 3. Run: `npm run deploy`
-
-🔧 Configuration
-
-Environment Variables
-Create a `.env` file in the root directory:
-
-env
-VITE_APP_TITLE=My Calendar App
-VITE_APP_VERSION=1.0.0
 
 
 Customization
@@ -200,4 +185,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ⭐ If you found this project helpful, please give it a star on GitHub!
 
-Made with Grit 💪 and a Willingness to Learn 🎓 by Dawan Wright
+~ Made with Grit 💪 and a Willingness to Learn 🎓 by Dawan Wright
