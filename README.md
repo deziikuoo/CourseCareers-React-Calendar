@@ -158,12 +158,6 @@ GitHub Pages
 2. Add deploy script to package.json
 3. Run: `npm run deploy`
 
-🔧 Configuration
-
-Environment Variables
-Create a `.env` file in the root directory:
-
-
 
 Customization
 - Colors: Modify color variables in `Calendar.css`
